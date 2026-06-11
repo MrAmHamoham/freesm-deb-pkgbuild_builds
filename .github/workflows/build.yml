@@ -18,10 +18,17 @@ jobs:
       - name: Install dependencies and setup makedeb repository
         run: |
           sudo apt-get update
-          sudo apt-get install -y apt-transport-https curl wget
+          sudo apt-get install -y apt-transport-https curl wget gpg
           
-          # Run the installer with '-ci' to cleanly install the stable release without prompting for user input
-          bash -ci "$(wget -qO - 'https://shlink.makedeb.org/install')"
+          # Add the correct, updated makedeb signing key
+          wget -qO - 'https://proget.makedeb.org/debian-feeds/makedeb.pub' | gpg --dearmor | sudo tee /usr/share/keyrings/makedeb-archive-keyring.gpg > /dev/null
+          
+          # Register the official repository with the fixed 'sources.list.d' path
+          echo 'deb [signed-by=/usr/share/keyrings/makedeb-archive-keyring.gpg arch=all] https://proget.makedeb.org/ makedeb main' | sudo tee /etc/apt/sources.list.d/makedeb.list
+          
+          # Update package index and explicitly install makedeb
+          sudo apt-get update
+          sudo apt-get install -y makedeb
 
       - name: Build the package with makedeb
         run: |
