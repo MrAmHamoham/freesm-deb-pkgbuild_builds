@@ -1,0 +1,40 @@
+name: Build Freesm Debian Package
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: # Allows you to manually trigger the workflow from the Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04 # Use a supported Ubuntu environment
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies and setup makedeb repository
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https curl wget
+          
+          # Add the official makedeb repository
+          wget -qO - 'https://proget.hunterwittenborn.com/debian-feeds/makedeb.pub' | gpg --dearmor | sudo tee /usr/share/keyrings/makedeb-archive-keyring.gpg > /dev/null
+          echo "deb [signed-by=/usr/share/keyrings/makedeb-archive-keyring.gpg] https://proget.hunterwittenborn.com/ makedeb main" | sudo tee /etc/apt/sources.list.dev/makedeb.list
+          
+          sudo apt-get update
+          sudo apt-get install -y makedeb
+
+      - name: Build the package with makedeb
+        run: |
+          # -s automatically installs missing build dependencies via apt
+          makedeb -s
+
+      - name: Upload generated DEB package
+        uses: actions/upload-artifact@v4
+        with:
+          name: freesm-deb-package
+          # Finds any .deb files generated in the workspace and uploads them
+          path: ./*.deb
