@@ -20,20 +20,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y apt-transport-https curl wget gpg
           
-          # Add the correct, updated makedeb signing key
-          wget -qO - 'https://proget.makedeb.org/debian-feeds/makedeb.pub' | gpg --dearmor | sudo tee /usr/share/keyrings/makedeb-archive-keyring.gpg > /dev/null
+          # 1. Download and install the modern Prebuilt MPR archive keyring
+          wget -qO - 'https://prebuilt.mpr.io/mpr.gpg' | gpg --dearmor | sudo tee /usr/share/keyrings/mpr-archive-keyring.gpg > /dev/null
           
-          # Register the official repository with the fixed 'sources.list.d' path
-          echo 'deb [signed-by=/usr/share/keyrings/makedeb-archive-keyring.gpg arch=all] https://proget.makedeb.org/ makedeb main' | sudo tee /etc/apt/sources.list.d/makedeb.list
+          # 2. Add the correct, modern package repository
+          echo "deb [signed-by=/usr/share/keyrings/mpr-archive-keyring.gpg arch=amd64] https://prebuilt.mpr.io/ makedeb main" | sudo tee /etc/apt/sources.list.d/makedeb.list
           
-          # Update package index and explicitly install makedeb
+          # 3. Update apt and install makedeb cleanly without custom scripts
           sudo apt-get update
           sudo apt-get install -y makedeb
 
       - name: Build the package with makedeb
         run: |
-          # -s automatically installs missing build dependencies via apt
-          makedeb -s
+          # Sync dependencies and build the package
+          sudo makedeb -s
 
       - name: Upload generated DEB package
         uses: actions/upload-artifact@v4
