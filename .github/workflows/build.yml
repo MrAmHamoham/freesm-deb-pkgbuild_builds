@@ -16,23 +16,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies and setup makedeb repository
+        env:
+          # Tells the installer script which release type to deploy headlessly
+          MAKEDEB_RELEASE: 'makedeb'
         run: |
           sudo apt-get update
-          sudo apt-get install -y apt-transport-https curl wget gpg
+          sudo apt-get install -y apt-transport-https curl wget
           
-          # 1. Download and install the modern Prebuilt MPR archive keyring
-          wget -qO - 'https://prebuilt.mpr.io/mpr.gpg' | gpg --dearmor | sudo tee /usr/share/keyrings/mpr-archive-keyring.gpg > /dev/null
-          
-          # 2. Add the correct, modern package repository
-          echo "deb [signed-by=/usr/share/keyrings/mpr-archive-keyring.gpg arch=amd64] https://prebuilt.mpr.io/ makedeb main" | sudo tee /etc/apt/sources.list.d/makedeb.list
-          
-          # 3. Update apt and install makedeb cleanly without custom scripts
-          sudo apt-get update
-          sudo apt-get install -y makedeb
+          # Dropped the -i interactive flag to prevent terminal binding errors
+          bash -c "$(wget -qO - 'https://shlink.makedeb.org/install')"
 
       - name: Build the package with makedeb
         run: |
-          # Sync dependencies and build the package
+          # Sync missing build tools and generate the .deb payload
           sudo makedeb -s
 
       - name: Upload generated DEB package
